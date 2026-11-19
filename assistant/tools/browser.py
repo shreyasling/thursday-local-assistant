@@ -316,7 +316,7 @@ def browser_ui_frame() -> dict[str, Any]:
     """Return a fresh frame and browser metadata for the authenticated live UI."""
     with _LOCK:
         if _CONTEXT is None or _CURRENT_PAGE is None or _CURRENT_PAGE.is_closed():
-            return {"running": False, "tabs": []}
+            return {"running": False, "tabs": [], "manual_control": _MANUAL_CONTROL}
         page = _CURRENT_PAGE
         png = page.screenshot(type="png", animations="disabled")
         tabs = []
@@ -327,7 +327,7 @@ def browser_ui_frame() -> dict[str, Any]:
                 tabs.append({"index": index, "title": "", "url": ""})
         return {"running": True, "image": base64.b64encode(png).decode("ascii"), "url": page.url,
                 "title": page.title(), "width": (page.viewport_size or {}).get("width", 1440),
-                "height": (page.viewport_size or {}).get("height", 1000), "tabs": tabs}
+                "height": (page.viewport_size or {}).get("height", 1000), "tabs": tabs, "manual_control": _MANUAL_CONTROL}
 
 
 def browser_ui_action(data: dict[str, Any]) -> dict[str, Any]:
