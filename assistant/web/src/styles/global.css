@@ -1,3 +1,19 @@
+
+/* Live interactive Chromium browser dock */
+.browser-dock{flex:0 0 auto;margin:8px 16px 10px;border:1px solid var(--panel-border-strong);border-radius:14px;background:rgba(12,14,10,.78);overflow:hidden}
+.browser-dock-bar{min-height:42px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 10px 6px 14px}
+.browser-dock-title{display:flex;align-items:center;gap:10px;min-width:0;flex:1;background:none;border:0;color:var(--text-main);text-align:left;cursor:pointer;font:inherit}
+.browser-dock-subtitle{color:var(--text-muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.browser-live-dot{width:8px;height:8px;border-radius:50%;background:#69705f;flex:none}.browser-live-dot.active{background:#74c78a;box-shadow:0 0 10px #74c78a88}
+.browser-dock-actions{display:flex;gap:7px}.browser-dock-actions button,.browser-address button{border:1px solid var(--panel-border-strong);border-radius:7px;background:rgba(255,255,255,.04);color:var(--text-main);padding:6px 10px;cursor:pointer;font:inherit;font-size:12px}
+.browser-dock-actions .browser-takeover.active{background:var(--accent-1);color:#111;border-color:transparent;font-weight:700}
+.browser-dock-body{border-top:1px solid var(--panel-border)}.browser-address{display:flex;gap:6px;padding:8px}.browser-address input{flex:1;min-width:0;border:1px solid var(--panel-border-strong);border-radius:7px;background:rgba(255,255,255,.04);color:var(--text-main);padding:7px 10px;font:12px monospace}
+.browser-screen{position:relative;margin:0 8px;overflow:auto;background:#fff;border-radius:8px;max-height:52vh;display:flex;justify-content:center}.browser-screen img{display:block;width:100%;height:auto;object-fit:contain;cursor:default}.browser-screen.interactive{outline:2px solid var(--accent-1)}.browser-screen.interactive img{cursor:crosshair;user-select:none}
+.browser-control-hint{position:sticky;bottom:8px;align-self:flex-end;margin:8px;padding:6px 9px;background:#151811dd;color:#fff;border-radius:7px;font-size:10px;pointer-events:none}
+.browser-empty{min-height:130px;display:grid;place-content:center;justify-items:center;gap:7px;color:var(--text-muted);text-align:center;padding:18px}.browser-empty span{font-size:22px;color:var(--accent-1)}.browser-empty strong{color:var(--text-main);font-size:13px}.browser-empty p{font-size:11px;max-width:360px}
+.browser-dock-footer{display:flex;justify-content:space-between;gap:12px;padding:7px 10px;color:var(--text-muted);font-size:10px}.browser-dock-footer span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.browser-tabs{display:flex;gap:6px;padding:0 8px 8px;overflow:auto}.browser-tabs span{border:1px solid var(--panel-border);border-radius:6px;padding:4px 8px;color:var(--text-muted);font-size:10px;white-space:nowrap}
+@media(max-width:640px){.browser-dock{margin:6px 8px}.browser-dock-subtitle{display:none}.browser-screen{max-height:42vh}.browser-dock-footer{font-size:9px}}
 :root {
   /* Sage Olive palette — kept in sync with the desktop Theme.qml
      (accentBlue #9ead7b / accentCyan #b1bd95 / accentWarn #bdbe7b). */
