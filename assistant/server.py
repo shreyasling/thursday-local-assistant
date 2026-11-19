@@ -411,6 +411,15 @@ class ThursdayHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 return
             if parsed_path == "/api/events" and not self._require_local_origin():
                 return
+        if parsed_path == "/api/browser/frame":
+            if not self._require_local_origin():
+                return
+            try:
+                from assistant.tools.browser import browser_ui_frame
+                self._send_json(200, browser_ui_frame())
+            except Exception:
+                self._send_json(200, {"running": False, "tabs": []})
+            return
         if parsed_path.startswith(("/api/tasks", "/api/captures/", "/api/memory")):
             if not self._require_local_origin():
                 return
@@ -884,7 +893,7 @@ class ThursdayHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         parsed_path = parsed.path
         query = parse_qs(parsed.query)
         q_token = (query.get("token") or [None])[0]
-        if parsed_path.startswith(("/api/tasks/", "/api/memory/", "/api/message", "/api/confirm", "/api/voice", "/api/playback", "/api/browser-session")) and not self._require_local_origin():
+        if parsed_path.startswith(("/api/tasks/", "/api/memory/", "/api/message", "/api/confirm", "/api/voice", "/api/playback", "/api/browser-session", "/api/browser/control")) and not self._require_local_origin():
             return
 
         if parsed_path == "/api/browser-bridge/v2/result":
@@ -940,6 +949,22 @@ class ThursdayHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 return
             ok = broadcaster.report_task_view(view_id, sequence, conversation_id)
             self._send_json(200 if ok else 404, {"ok": ok})
+            return
+
+        if parsed_path == "/api/browser/control":
+            try:
+                size = int(self.headers.get("Content-Length", 0))
+                if not 0 < size <= 8192:
+                    raise ValueError("Invalid browser control request size.")
+                data = json.loads(self.rfile.read(size))
+                if not isinstance(data, dict):
+                    raise ValueError("Invalid browser control request.")
+                from assistant.tools.browser import browser_ui_action
+                self._send_json(200, browser_ui_action(data))
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_json(400, {"error": str(exc)})
+            except Exception:
+                self._send_json(500, {"error": "Browser control failed. Refresh the browser preview and retry."})
             return
 
         if parsed_path == "/api/browser-session":
