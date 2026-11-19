@@ -12,11 +12,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     THURSDAY_HOST=0.0.0.0 \
     THURSDAY_PORT=5005 \
     THURSDAY_ALLOW_REMOTE=1 \
-    THURSDAY_HYPRUSE=0
+    THURSDAY_HYPRUSE=0 \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY assistant/ ./assistant/
-RUN pip install --no-cache-dir .
+RUN pip install --no-cache-dir . \
+    && python -m playwright install --with-deps chromium \
+    && chmod -R a+rX /ms-playwright \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=web-build /src/assistant/web/dist ./assistant/web/dist
 RUN useradd --system --uid 10001 --create-home --home-dir /home/thursday thursday \
     && mkdir -p /data /workspace \
