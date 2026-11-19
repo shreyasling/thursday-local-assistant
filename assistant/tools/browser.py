@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import ipaddress
 import os
 import socket
@@ -299,3 +300,69 @@ def get_tools(config: ToolConfig) -> list[BaseTool]:
         BrowserScreenshotTool(),
         BrowserTabsTool(),
     ]
+
+
+def browser_ui_frame() -> dict[str, Any]:
+    """Return a fresh frame and browser metadata for the authenticated live UI."""
+    with _LOCK:
+        if _CONTEXT is None or _CURRENT_PAGE is None or _CURRENT_PAGE.is_closed():
+            return {"running": False, "tabs": []}
+        page = _CURRENT_PAGE
+        png = page.screenshot(type="png", animations="disabled")
+        tabs = []
+        for index, tab in enumerate(_CONTEXT.pages):
+            try:
+                tabs.append({"index": index, "title": tab.title(), "url": tab.url})
+            except Exception:
+                tabs.append({"index": index, "title": "", "url": ""})
+        return {"running": True, "image": base64.b64encode(png).decode("ascii"), "url": page.url,
+                "title": page.title(), "width": (page.viewport_size or {}).get("width", 1440),
+                "height": (page.viewport_size or {}).get("height", 1000), "tabs": tabs}
+
+
+def browser_ui_action(data: dict[str, Any]) -> dict[str, Any]:
+    """Apply one bounded user takeover action to the persistent browser."""
+    action = str(data.get("action", ""))
+    with _LOCK:
+        _, page = _browser()
+        if action == "navigate":
+            url = _validate_public_url(str(data.get("url", "")))
+            try:
+                page.goto(url, wait_until="domcontentloaded", timeout=45000)
+            except PlaywrightTimeoutError:
+                pass
+        elif action == "click":
+            x, y = float(data.get("x", -1)), float(data.get("y", -1))
+            width = (page.viewport_size or {}).get("width", 1440)
+            height = (page.viewport_size or {}).get("height", 1000)
+            if not (0 <= x <= width and 0 <= y <= height):
+                raise ValueError("Click position is outside the browser viewport.")
+            page.mouse.click(x, y)
+        elif action == "scroll":
+            dx, dy = float(data.get("dx", 0)), float(data.get("dy", 0))
+            if abs(dx) > 2000 or abs(dy) > 2000:
+                raise ValueError("Scroll amount is too large.")
+            page.mouse.wheel(dx, dy)
+        elif action == "key":
+            key = str(data.get("key", ""))
+            allowed = {"Enter", "Tab", "Escape", "Backspace", "Delete", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown", " "}
+            if key not in allowed and not (len(key) == 1 and key.isprintable()):
+                raise ValueError("Unsupported keyboard key.")
+            if len(key) == 1 and key.isprintable() and key != " ":
+                page.keyboard.insert_text(key)
+            else:
+                page.keyboard.press("Space" if key == " " else key)
+        elif action == "type":
+            value = str(data.get("text", ""))
+            if len(value) > 4000:
+                raise ValueError("Text input is too long.")
+            page.keyboard.insert_text(value)
+        elif action == "back":
+            page.go_back(wait_until="domcontentloaded", timeout=15000)
+        elif action == "forward":
+            page.go_forward(wait_until="domcontentloaded", timeout=15000)
+        elif action == "reload":
+            page.reload(wait_until="domcontentloaded", timeout=30000)
+        else:
+            raise ValueError("Unsupported browser control action.")
+        return _page_result(page)
