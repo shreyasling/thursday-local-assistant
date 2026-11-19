@@ -198,6 +198,7 @@ export default function App() {
       />
       <div className="app-container">
         <div className="chat-panel">
+          <BrowserDock />
           <TaskPanel task={task} busy={busy} onMemory={() => setShowMemory(true)} onTask={setTask} />
           <ChatHistory
             items={state.items}
