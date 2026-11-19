@@ -53,6 +53,16 @@ def _validate_public_url(raw_url: str) -> str:
     return value
 
 
+def _guard_request(route: Any) -> None:
+    """Block navigations and subresources that target local/private networks."""
+    try:
+        _validate_public_url(route.request.url)
+    except ValueError:
+        route.abort()
+        return
+    route.continue_()
+
+
 def _browser() -> tuple[BrowserContext, Page]:
     global _PLAYWRIGHT, _CONTEXT, _CURRENT_PAGE
     if _CONTEXT is None:
@@ -66,6 +76,7 @@ def _browser() -> tuple[BrowserContext, Page]:
             accept_downloads=False,
             args=["--disable-dev-shm-usage"],
         )
+        _CONTEXT.route("**/*", _guard_request)
         _CONTEXT.set_default_timeout(12000)
         pages = _CONTEXT.pages
         _CURRENT_PAGE = pages[0] if pages else _CONTEXT.new_page()
