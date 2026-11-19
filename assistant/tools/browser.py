@@ -25,6 +25,12 @@ _LOCK = threading.RLock()
 _PLAYWRIGHT: Any | None = None
 _CONTEXT: BrowserContext | None = None
 _CURRENT_PAGE: Page | None = None
+_MANUAL_CONTROL = False
+
+
+def _require_agent_control() -> None:
+    if _MANUAL_CONTROL:
+        raise RuntimeError("Browser is in manual takeover mode. Wait until the user hands control back.")
 
 
 def _validate_public_url(raw_url: str) -> str:
@@ -114,6 +120,7 @@ class BrowserOpenTool(BaseTool):
     )
 
     def execute(self, arguments: dict[str, Any], context: ExecutionContext) -> dict[str, Any]:
+        _require_agent_control()
         url = _validate_public_url(str(arguments.get("url", "")))
         with _LOCK:
             _, page = _browser()
@@ -143,6 +150,7 @@ class BrowserSearchTool(BaseTool):
     )
 
     def execute(self, arguments: dict[str, Any], context: ExecutionContext) -> dict[str, Any]:
+        _require_agent_control()
         query = str(arguments.get("query", "")).strip()
         engine = str(arguments.get("engine", "google")).lower()
         if not query:
@@ -178,7 +186,9 @@ class BrowserClickTool(BaseTool):
     )
 
     def execute(self, arguments: dict[str, Any], context: ExecutionContext) -> dict[str, Any]:
+        _require_agent_control()
         text = str(arguments.get("text", "")).strip()
+        _require_agent_control()
         selector = str(arguments.get("selector", "")).strip()
         if bool(text) == bool(selector):
             raise ValueError("Provide exactly one of text or selector.")
@@ -322,7 +332,11 @@ def browser_ui_frame() -> dict[str, Any]:
 
 def browser_ui_action(data: dict[str, Any]) -> dict[str, Any]:
     """Apply one bounded user takeover action to the persistent browser."""
+    global _MANUAL_CONTROL
     action = str(data.get("action", ""))
+    if action == "takeover":
+        _MANUAL_CONTROL = bool(data.get("enabled"))
+        return {"success": True, "manual_control": _MANUAL_CONTROL}
     with _LOCK:
         _, page = _browser()
         if action == "navigate":
